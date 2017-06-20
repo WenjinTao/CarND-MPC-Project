@@ -98,12 +98,54 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          // Those two values are the control parameters we need
           double steer_value;
           double throttle_value;
 
+          // Display the waypoints/reference line
+          // Reference path using vehicle's coordinate system
+          vector<double> next_x_vals;
+          vector<double> next_y_vals;
+
+          // Transform those points to vehicle's coordinate system
+          for (int i = 0; i < ptsx.size(); i++) {
+            double diff_x = ptsx[i] - px;
+            double diff_y = ptsy[i] - py;
+
+            ptsx[i] = diff_x * cos(psi) + diff_y * sin(psi);
+            ptsy[i] = diff_y * cos(psi) - diff_x * sin(psi);
+
+            next_x_vals.push_back(ptsx[i]);
+            next_y_vals.push_back(ptsy[i]);
+          }
+
+
+          Eigen::VectorXd ptsx_vec = Eigen::VectorXd::Map(ptsx.data(), ptsx.size());
+          Eigen::VectorXd ptsy_vec = Eigen::VectorXd::Map(ptsy.data(), ptsy.size());
+
+          // Fit the polynomial to the waypoints
+          auto coeffs = polyfit(ptsx_vec, ptsy_vec, 3);
+
+          // Calculate initial cross track error and orientation error values
+          double cte = polyeval(coeffs, 0);
+          double epsi = atan(coeffs[1]);
+          // Initial state
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi; 
+
+          // Solve this mpc
+          auto result = mpc.Solve(state, coeffs);
+
+
+          // In MPC, delta is positive if we rotate counter-clockwise;
+          // In the simulator, a positive value implies a right turn.
+          // So we multiply the steering value by -1 before sending it back to the server
+          steer_value = -result[0]; 
+          throttle_value = result[1];
+
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
-          // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
+          // Otherwise the values will be in between [-deg2rad(25), deg2rad(25)=0.436332] instead of [-1, 1].
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
@@ -111,15 +153,19 @@ int main() {
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
+          for (int i=0; i<result.size()/2-1; i++) {
+
+            mpc_x_vals.push_back(result[2+i]);
+            mpc_y_vals.push_back(result[result.size()/2+1+i]);
+            
+          }
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
-
-          //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
