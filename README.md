@@ -51,7 +51,7 @@ $$
 
 ## 4. Model Predictive Control with Latency
 
-A 100 millisecond latency is considered in this project. The hyperparamteres $N=12$ and $dt=0.15$ handle this latency well. The vehicle can drive following the given path around the lake successfully.
+A 100 millisecond latency is considered in this project. After some trial and error, the hyperparamteres $N=12$ and $dt=0.15$ handle this 100 ms latency well. The vehicle can drive itself following the given path around the lake successfully.
 
 ---
 
