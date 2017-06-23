@@ -5,9 +5,53 @@
 
 This project is to implement a Model Predictive Controller to drive a vehicle around a lake track following a provided reference trajectory in the [simulator](https://github.com/udacity/self-driving-car-sim/releases).  The data sent back from the simulator is described in [DATA.md](./DATA.md). The simulator is waiting for commands of the actuator i.e. `throttle` and `steering_angle`. 
 
-## Vehicle Model
+## 1. The Vehicle Model
+
+#### State: 
+
+The vehicle state vector is
+$$
+[x, y, \psi,v, cte,  e_\psi]
+$$
+
+
+where $x$ and $y$ is the position, $\psi$ is the vehicle heading direction, $v$ is the velocity, $cte$ is the cross track error and $e_\psi$ is the heading error.
+
+#### Actuators: 
+
+The actuators vector is 
+$$
+[\delta, a]
+$$
+where $\delta$ is the vehicle steering angle and $a$ is the acceleration. 
+
+#### Update equations:
+
+The update equations are listed here
+
 
 <img src="./imgs/vehicle_model.png">
+
+## 2. Timestep length $N$ and Elapsed Duratoin $dt$
+
+The prediction horizon $T$ is the duration over which future predictions are made.
+$$
+T=N\times dt
+$$
+where $N$ is the number of timesteps  in the horizon and $dt$ is how much time elapses between actuations. A general guideline of tuning those hyperparameters is $T$ should be as large as possible, while $dt$ should be as small as possible. I started from $N=25$ and $dt=0.05$ and tuned those two values through trial and error. Finally I got the working combination which is $N=12$ and $dt=0.15$.
+
+
+## 3. Polynomial Fitting and MPC Preprocessing
+
+In the preprocessing step, the given waypoints are transformed to the vehicle coordinate system. A third order polynomial is fitted to those transformed waypoints. The vehicle state is initialized as
+$$
+[0,0,0,v, cte, e_\psi]
+$$
+
+
+## 4. Model Predictive Control with Latency
+
+A 100 millisecond latency is considered in this project. The hyperparamteres $N=12$ and $dt=0.15$ handle this latency well. The vehicle can drive following the given path around the lake successfully.
 
 ---
 
